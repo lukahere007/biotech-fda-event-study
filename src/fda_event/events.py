@@ -49,117 +49,131 @@ def core_company(key: str) -> str:
     return " ".join(toks) if toks else key
 
 
-# --------------------------------------------------------------------------- FDA joins
-def match_novel_to_drugsatfda(novel: pd.DataFrame, products: pd.DataFrame,
-                              orig: pd.DataFrame, apps: pd.DataFrame,
-                              max_days: int = 7) -> pd.DataFrame:
-    """Attach the Drugs@FDA application (NDA/BLA number, current sponsor) to each novel approval.
+# --------------------------------------------------------------------------- novel approvals
+_BIO_SUFFIX = re.compile(r"-[a-z]{4}\b")
 
-    Match on normalised brand name with an ORIG approval within `max_days`; fall back
-    to the first word of the active ingredient.
+
+def ingredient_cores(ingredients: object) -> set[str]:
+    """'TRASTUZUMAB-ANNS; HYALURONIDASE-OYSK' -> {'trastuzumab', 'hyaluronidase'}.
+
+    Biologics approved since 2017 carry a 4-letter FDA suffix; stripping it lets a
+    biosimilar or reformulation be recognised as an already-approved molecule.
     """
-    p = products.copy()
-    p["brand"] = p["DrugName"].map(normalize_brand)
-    p["ingr"] = p["ActiveIngredient"].astype(str).str.upper().str.extract(r"([A-Z0-9-]+)")[0]
-    o = orig[["ApplNo", "SubmissionStatusDate"]].copy()
-    o["ap_date"] = pd.to_datetime(o["SubmissionStatusDate"], errors="coerce")
-    cand = p[["ApplNo", "brand", "ingr"]].drop_duplicates().merge(o[["ApplNo", "ap_date"]], on="ApplNo")
-
-    out = []
-    for _, r in novel.iterrows():
-        brand = normalize_brand(r["drug_name"])
-        ingr = str(r.get("active_ingredient", "")).upper()
-        ingr = re.findall(r"[A-Z0-9-]+", ingr)
-        ingr = ingr[0] if ingr else ""
-        near = cand[(cand["ap_date"] - r["approval_date"]).abs().dt.days <= max_days]
-        hit, how = near[near["brand"] == brand], "brand+date"
-        if hit.empty and ingr:
-            hit, how = near[near["ingr"] == ingr], "ingredient+date"
-        if hit.empty:
-            out.append({"appl_no": None, "drugsatfda_date": pd.NaT, "match_method": "unmatched"})
-            continue
-        hit = hit.assign(gap=(hit["ap_date"] - r["approval_date"]).abs()).sort_values("gap")
-        out.append({"appl_no": hit["ApplNo"].iloc[0], "drugsatfda_date": hit["ap_date"].iloc[0],
-                    "match_method": how})
-    m = pd.concat([novel.reset_index(drop=True), pd.DataFrame(out)], axis=1)
-    a = apps[["ApplNo", "ApplType", "SponsorName"]].rename(
-        columns={"ApplNo": "appl_no", "ApplType": "appl_type", "SponsorName": "drugsatfda_sponsor"})
-    return m.merge(a, on="appl_no", how="left")
+    if not isinstance(ingredients, str):
+        return set()
+    out = set()
+    for part in re.split(r"[;,]| and ", ingredients.lower()):
+        part = _BIO_SUFFIX.sub("", part).strip()
+        part = re.sub(r"\s+", " ", part)
+        if part:
+            out.add(part)
+    return out
 
 
-_LETTERHEAD = re.compile(r"(DEPARTMENT OF HEALTH|FOOD AND DRUG|PUBLIC HEALTH SERVICE|SILVER SPRING|"
-                         r"ROCKVILLE|NEW HAMPSHIRE AVE|^\s*(NDA|BLA)\b|APPROVAL|ACCELERATED|MD 20|"
-                         r"CENTER FOR|OFFICE OF|^\s*$)", re.I)
+def define_novel_approvals(apps: pd.DataFrame, products: pd.DataFrame, orig: pd.DataFrame,
+                           years: list[int]) -> pd.DataFrame:
+    """Novel drug approvals (CDER definition) from Drugs@FDA original approvals.
 
-
-def extract_applicant(header: object) -> str:
-    """Pull the addressee company from the first page of an FDA approval letter.
-
-    Letters are addressed as 'Company Name / Attention: Person / Title / Address'.
-    We take the nearest non-letterhead line above 'Attention'. Returns '' if not found.
+    * NDA: original approval with chemical-type class 'TYPE 1' (new molecular entity,
+      including combinations such as 'TYPE 1/4').
+    * BLA: original approval whose active ingredient(s) never appeared in any earlier
+      original NDA/BLA approval -> a new therapeutic biologic. This excludes biosimilars,
+      new formulations and the 2020 'deemed BLA' transitions of insulin etc.
+    One row per application; same-day approvals of the same molecule are collapsed.
     """
-    if not isinstance(header, str) or not header.strip():
-        return ""
-    lines = [ln.strip() for ln in header.splitlines()]
-    for i, ln in enumerate(lines):
-        if re.match(r"^(Attention|Attn)\b", ln, re.I):
-            # Some letters put company + 'Attention:' on one line.
-            before = re.split(r"\b(Attention|Attn)\b", ln, flags=re.I)[0].strip(" ,:")
-            if before and not _LETTERHEAD.search(before):
-                return before
-            for j in range(i - 1, max(i - 4, -1), -1):
-                if lines[j] and not _LETTERHEAD.search(lines[j]) and not re.search(r"\d{5}", lines[j]):
-                    return lines[j].strip(" ,:")
-            return ""
-    return ""
+    o = orig.copy()
+    o["approval_date"] = pd.to_datetime(o["approval_date"].astype(str), format="%Y%m%d", errors="coerce")
+    o = o.dropna(subset=["approval_date"]).sort_values("approval_date")
+    o = o.drop_duplicates("appl_no")          # first original approval per application
+    prod = (products.groupby("appl_no")
+                    .agg(brand_name=("brand_name", "first"),
+                         active_ingredients=("active_ingredients", "first")).reset_index())
+    o = o.merge(prod, on="appl_no", how="left")
+    o["appl_type"] = o["appl_no"].str[:3]
+    o["cores"] = o["active_ingredients"].map(ingredient_cores)
+
+    seen: dict[str, pd.Timestamp] = {}
+    is_new_bio = []
+    for _, r in o.iterrows():                  # chronological
+        prior = [c for c in r["cores"] if c in seen and seen[c] < r["approval_date"]]
+        is_new_bio.append(r["appl_type"] == "BLA" and bool(r["cores"]) and not prior)
+        for c in r["cores"]:
+            seen.setdefault(c, r["approval_date"])
+    o["new_biologic"] = is_new_bio
+    nme = (o["appl_type"] == "NDA") & o["class_code"].fillna("").str.upper().str.startswith("TYPE 1")
+    o["novel_basis"] = np.where(nme, "NDA type 1 (NME)", np.where(o["new_biologic"], "BLA new biologic", ""))
+    ev = o[(o["novel_basis"] != "") & o["approval_date"].dt.year.isin(years)].copy()
+    ev["core_key"] = ev["cores"].map(lambda c: "|".join(sorted(c)))
+    ev = ev.drop_duplicates(["core_key", "approval_date"])
+    a = apps.drop_duplicates("appl_no")[["appl_no", "sponsor"]]
+    ev = ev.merge(a, on="appl_no", how="left")
+    ev["year"] = ev["approval_date"].dt.year
+    return ev.drop(columns=["cores", "core_key", "new_biologic"]).reset_index(drop=True)
 
 
 # --------------------------------------------------------------------------- ticker mapping
-def sec_lookup(sec: pd.DataFrame) -> pd.DataFrame:
-    """US exchange-listed SEC registrants with normalised names (OTC excluded)."""
-    s = sec.copy()
-    s = s[s["exchange"].isin(["Nasdaq", "NYSE", "NYSE American", "NYSE MKT", "CBOE", "BATS"])]
-    s["key"] = s["sec_name"].map(normalize_company)
+_SEC_NAME_JUNK = re.compile(
+    r"\s*-?\s*(class [a-z] )?(common stock|common shares|ordinary shares|american depositary shares?|"
+    r"american depository shares?|ads|sponsored adr|depositary shares).*$", re.I)
+
+
+def listing_lookup(listings: pd.DataFrame) -> pd.DataFrame:
+    """Current exchange listings (Nasdaq, NYSE, NYSE American) with normalised issuer names."""
+    s = listings[listings["exchange"].isin(["Nasdaq", "NYSE", "NYSE American"])].copy()
+    s["issuer"] = s["security_name"].astype(str).str.replace(_SEC_NAME_JUNK, "", regex=True).str.strip(" -,")
+    s["key"] = s["issuer"].map(normalize_company)
     s["core"] = s["key"].map(core_company)
-    # One ticker per CIK: prefer the shortest symbol without '-' (common stock over preferred/warrants).
-    s = s.assign(_bad=s["ticker"].str.contains(r"[-.]").astype(int), _len=s["ticker"].str.len())
-    s = s.sort_values(["cik", "_bad", "_len"]).drop_duplicates("cik")
+    # One symbol per issuer: prefer plain symbols (no '$', '.', '-': preferreds, units, classes).
+    s = s.assign(_bad=s["symbol"].str.contains(r"[$.\-]").astype(int), _len=s["symbol"].str.len())
+    s = s.sort_values(["key", "_bad", "_len"]).drop_duplicates("key")
     return s.drop(columns=["_bad", "_len"])
 
 
-def auto_match(applicant_key: str, sec_l: pd.DataFrame) -> tuple[str | None, str]:
+def auto_match(applicant_key: str, lk: pd.DataFrame) -> tuple[str | None, str]:
     """Exact normalised-name match, else unique core-name match. Returns (ticker, method)."""
     if not applicant_key:
         return None, "no_name"
-    hit = sec_l[sec_l["key"] == applicant_key]
+    hit = lk[lk["key"] == applicant_key]
     if len(hit) == 1:
-        return hit["ticker"].iloc[0], "auto_exact"
+        return hit["symbol"].iloc[0], "auto_exact"
     core = core_company(applicant_key)
-    hit = sec_l[sec_l["core"] == core]
+    hit = lk[lk["core"] == core]
     if len(hit) == 1 and len(core) >= 4:
-        return hit["ticker"].iloc[0], "auto_core"
+        return hit["symbol"].iloc[0], "auto_core"
     return None, "no_match"
 
 
-def map_tickers(ev: pd.DataFrame, sec: pd.DataFrame, overrides: pd.DataFrame) -> pd.DataFrame:
+def map_tickers(ev: pd.DataFrame, listings: pd.DataFrame, overrides: pd.DataFrame,
+                date_col: str | None = "approval_date") -> pd.DataFrame:
     """Assign a ticker per event. Hand-reviewed overrides win over automatic matches.
 
-    overrides columns: sponsor_key, ticker (blank = not US-listed), status, note.
+    overrides columns: sponsor_key, ticker (blank = no usable US listing), valid_from,
+    valid_to (optional ISO dates bounding when that sponsor name meant that ticker, e.g. a
+    subsidiary maps to its acquirer only after the deal closed), status, note.
     """
-    sec_l = sec_lookup(sec)
+    lk = listing_lookup(listings)
     ov = overrides.copy()
     ov["sponsor_key"] = ov["sponsor_key"].map(normalize_company)
-    ov = ov.drop_duplicates("sponsor_key", keep="last").set_index("sponsor_key")
+    ov["valid_from"] = pd.to_datetime(ov.get("valid_from"), errors="coerce")
+    ov["valid_to"] = pd.to_datetime(ov.get("valid_to"), errors="coerce")
+    by_key = {k: g for k, g in ov.groupby("sponsor_key")}
     tick, method, status = [], [], []
-    for key in ev["sponsor_key"]:
-        if key in ov.index:
-            t = ov.at[key, "ticker"]
-            t = t if isinstance(t, str) and t.strip() else None
-            tick.append(t)
+    for _, r in ev.iterrows():
+        key = r["sponsor_key"]
+        if key in by_key:
+            g = by_key[key]
+            if date_col is not None:
+                d = r[date_col]
+                g = g[(g["valid_from"].isna() | (g["valid_from"] <= d)) & (g["valid_to"].isna() | (d <= g["valid_to"]))]
+            if g.empty:
+                tick.append(None), method.append("override"), status.append("outside_override_dates")
+                continue
+            t = g["ticker"].iloc[-1]
+            tick.append(t if isinstance(t, str) and t.strip() else None)
             method.append("override")
-            status.append(ov.at[key, "status"])
+            status.append(g["status"].iloc[-1])
         else:
-            t, m = auto_match(key, sec_l)
+            t, m = auto_match(key, lk)
             tick.append(t)
             method.append(m)
             status.append("listed" if t else "unmapped")

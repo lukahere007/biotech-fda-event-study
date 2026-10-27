@@ -3,7 +3,8 @@
 Run in GitHub Actions after build_events.py. Writes:
   data/prices.parquet              date, ticker, close (split-adjusted), adj_close, volume
   data/splits.csv                  yfinance split history per ticker
-  data/shares_outstanding.csv.gz   SEC XBRL dei:EntityCommonStockSharesOutstanding by filing
+  data/shares_outstanding.csv.gz   yfinance shares-outstanding history (Yahoo; SEC XBRL is
+                                   unreachable from GitHub runners)
   data/market_fetch_log.json       tickers requested / returned / empty
 """
 from __future__ import annotations
@@ -15,14 +16,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
 import yfinance as yf
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from fda_event.config import (BENCHMARK, OTHER_INDICES, PRICE_END, PRICE_START,  # noqa: E402
-                              SEC_USER_AGENT)
+from fda_event.config import BENCHMARK, OTHER_INDICES, PRICE_END, PRICE_START  # noqa: E402
 
 DATA = ROOT / "data"
 
@@ -62,24 +61,23 @@ def fetch_splits(tickers: list[str]) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["ticker", "date", "ratio"])
 
 
-def fetch_shares(ticker_cik: dict[str, str]) -> pd.DataFrame:
-    rows = []
-    for t, cik in ticker_cik.items():
-        url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(cik):010d}.json"
+def fetch_shares(tickers: list[str]) -> pd.DataFrame:
+    frames = []
+    for t in tickers:
         try:
-            r = requests.get(url, headers={"User-Agent": SEC_USER_AGENT}, timeout=60)
-            r.raise_for_status()
-            facts = r.json()["facts"].get("dei", {}).get("EntityCommonStockSharesOutstanding", {})
-            for item in facts.get("units", {}).get("shares", []):
-                rows.append({"ticker": t, "cik": cik, "end": item["end"], "filed": item["filed"],
-                             "accn": item["accn"], "form": item.get("form"), "shares": item["val"]})
+            sh = yf.Ticker(t).get_shares_full(start=PRICE_START, end=PRICE_END)
         except Exception as e:  # noqa: BLE001
-            print("companyfacts failed", t, e)
-        time.sleep(0.15)
-    df = pd.DataFrame(rows)
-    # Several share classes in one filing are reported as separate facts with the same date: sum them.
-    return (df.drop_duplicates(["ticker", "accn", "end", "shares"])
-              .groupby(["ticker", "cik", "accn", "end", "filed"], as_index=False)["shares"].sum())
+            print("shares failed", t, e)
+            continue
+        if sh is None or len(sh) == 0:
+            continue
+        sh = sh[~sh.index.duplicated(keep="last")]
+        idx = sh.index.tz_localize(None) if sh.index.tz is not None else sh.index
+        df = pd.DataFrame({"ticker": t, "date": idx.normalize(), "shares": sh.values})
+        # Daily rows are mostly repeats: keep the last value per month to stay compact.
+        frames.append(df.groupby(df["date"].dt.to_period("M")).tail(1))
+        time.sleep(0.3)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["ticker", "date", "shares"])
 
 
 def main() -> None:
@@ -91,9 +89,7 @@ def main() -> None:
     got = set(prices["ticker"])
     fetch_splits(tickers).to_csv(DATA / "splits.csv", index=False)
 
-    sec = pd.read_csv(DATA / "raw" / "sec_company_tickers.csv", dtype={"cik": str})
-    cik = sec.drop_duplicates("ticker").set_index("ticker")["cik"]
-    shares = fetch_shares({t: cik[t] for t in tickers if t in cik.index})
+    shares = fetch_shares(tickers)
     shares.to_csv(DATA / "shares_outstanding.csv.gz", index=False)
 
     log = {"fetched_at_utc": datetime.now(timezone.utc).isoformat(), "yfinance": yf.__version__,

@@ -101,8 +101,8 @@ def main() -> None:
     st.attrition.to_csv(RES / "attrition.csv", index=False)
     tab = results_table(ev)
     tab.to_csv(RES / "car_tests.csv", index=False)
-    keep = ["event_id", "ticker", "drug_name", "approval_date", "event_date", "applicant",
-            "applicant_source", "mcap_usd", "size_group", "prior_approvals", "first_approval",
+    keep = ["event_id", "ticker", "brand_name", "active_ingredients", "approval_date", "event_date", "sponsor", "novel_basis",
+            "mcap_usd", "mcap_basis", "size_group", "prior_approvals", "first_approval",
             "beta"] + [c for c in ev.columns if c.startswith("CAR")]
     ev[keep].to_csv(RES / "event_cars.csv", index=False)
 
@@ -138,7 +138,7 @@ def main() -> None:
         "n_tickers": int(ev["ticker"].nunique()),
         "size_groups": ev["size_group"].value_counts().to_dict(),
         "first_approval": int(ev["first_approval"].sum()),
-        "largest_moves": top[["ticker", "drug_name", "event_date", "CAR[0,+1]"]].iloc[
+        "largest_moves": top[["ticker", "brand_name", "event_date", "CAR[0,+1]"]].iloc[
             list(range(3)) + list(range(-3, 0))].astype(str).to_dict("records"),
     }
     (RES / "summary.json").write_text(json.dumps(summary, indent=2, default=str))

@@ -24,7 +24,7 @@ class Inputs:
     shares: pd.DataFrame
     applications: pd.DataFrame
     orig_approvals: pd.DataFrame
-    sec: pd.DataFrame
+    listings: pd.DataFrame
     overrides: pd.DataFrame
 
 
@@ -34,31 +34,40 @@ def load(root: Path) -> Inputs:
         events=pd.read_csv(d / "events_mapped.csv", parse_dates=["approval_date"]),
         prices=pd.read_parquet(d / "prices.parquet"),
         splits=pd.read_csv(d / "splits.csv", parse_dates=["date"]),
-        shares=pd.read_csv(d / "shares_outstanding.csv.gz", parse_dates=["end", "filed"]),
-        applications=pd.read_csv(d / "raw" / "drugsatfda_applications.csv.gz", dtype=str),
-        orig_approvals=pd.read_csv(d / "raw" / "drugsatfda_orig_approvals.csv.gz", dtype=str),
-        sec=pd.read_csv(d / "raw" / "sec_company_tickers.csv", dtype={"cik": str}),
+        shares=pd.read_csv(d / "shares_outstanding.csv.gz", parse_dates=["date"]),
+        applications=pd.read_csv(d / "raw" / "openfda_applications.csv.gz", dtype=str),
+        orig_approvals=pd.read_csv(d / "raw" / "openfda_orig_approvals.csv.gz", dtype=str),
+        listings=pd.read_csv(d / "raw" / "listed_symbols.csv", dtype=str, keep_default_na=False),
         overrides=pd.read_csv(d / "sponsor_ticker_map.csv", dtype=str),
     )
 
 
 # --------------------------------------------------------------------------- characteristics
 def market_cap(ticker: str, asof: pd.Timestamp, prices: pd.DataFrame, splits: pd.DataFrame,
-               shares: pd.DataFrame) -> float:
-    """Point-in-time market cap: shares from the latest SEC filing *filed* by `asof`
-    times the close on/before `asof`, with splits after the share count's date undone.
+               shares: pd.DataFrame, max_gap_days: int = 400) -> tuple[float, str]:
+    """Approximate market cap on `asof`: shares outstanding x close.
 
-    yfinance 'close' is split-adjusted to today, so mcap = shares_e * close_t * prod(splits after e).
+    Shares come from Yahoo's shares-outstanding history (the latest observation on or
+    before `asof`, else the first one after it, within `max_gap_days`). yfinance closes are
+    split-adjusted to today, so the close is converted back to the share count's basis by
+    multiplying by every split ratio dated after the share observation.
+    Returns (mcap, basis) where basis is 'before', 'after' or 'missing'.
     """
-    sh = shares[(shares["ticker"] == ticker) & (shares["filed"] <= asof)]
+    sh = shares[shares["ticker"] == ticker]
     px = prices[(prices["ticker"] == ticker) & (prices["date"] <= asof)]
     if sh.empty or px.empty:
-        return np.nan
-    s = sh.sort_values(["filed", "end"]).iloc[-1]
-    if (asof - s["end"]).days > 400:          # stale share count: do not guess
-        return np.nan
-    sp = splits[(splits["ticker"] == ticker) & (splits["date"] > s["end"])]["ratio"].prod()
-    return float(s["shares"] * px.sort_values("date")["close"].iloc[-1] * sp)
+        return np.nan, "missing"
+    gap = (sh["date"] - asof).dt.days
+    before = sh[(gap <= 0) & (gap >= -max_gap_days)]
+    after = sh[(gap > 0) & (gap <= max_gap_days)]
+    if len(before):
+        s, basis = before.sort_values("date").iloc[-1], "before"
+    elif len(after):
+        s, basis = after.sort_values("date").iloc[0], "after"
+    else:
+        return np.nan, "missing"
+    sp = splits[(splits["ticker"] == ticker) & (splits["date"] > s["date"])]["ratio"].prod()
+    return float(s["shares"] * px.sort_values("date")["close"].iloc[-1] * sp), basis
 
 
 def prior_approvals(ev: pd.DataFrame, inp: Inputs) -> pd.Series:
@@ -68,23 +77,17 @@ def prior_approvals(ev: pd.DataFrame, inp: Inputs) -> pd.Series:
     the events (no fuzzy matching here, to avoid false links). Approvals before the event date
     (excluding the event's own application) are counted.
     """
-    apps = inp.applications[inp.applications["ApplType"].isin(["NDA", "BLA"])]
-    o = inp.orig_approvals.merge(apps[["ApplNo", "SponsorName"]], on="ApplNo")
-    o["date"] = pd.to_datetime(o["SubmissionStatusDate"], errors="coerce")
-    names = pd.DataFrame({"sponsor_key": o["SponsorName"].map(normalize_company).unique()})
-    mapped = map_tickers(names, inp.sec, inp.overrides)
-    mapped = mapped[mapped["map_method"].isin(["override", "auto_exact"])].dropna(subset=["ticker"])
-    o["sponsor_key"] = o["SponsorName"].map(normalize_company)
-    o = o.merge(mapped[["sponsor_key", "ticker"]], on="sponsor_key")
-    # Also count earlier sample events (their applicant-at-approval may differ from current sponsor).
-    hist = pd.concat([o[["ticker", "date", "ApplNo"]],
-                      ev[["ticker", "approval_date", "appl_no"]].rename(
-                          columns={"approval_date": "date", "appl_no": "ApplNo"})])
-    hist = hist.drop_duplicates(["ticker", "ApplNo"])
+    apps = inp.applications[inp.applications["appl_type"].isin(["NDA", "BLA"])]
+    o = inp.orig_approvals.drop_duplicates("appl_no").merge(apps[["appl_no", "sponsor"]], on="appl_no")
+    o["approval_date"] = pd.to_datetime(o["approval_date"].astype(str), format="%Y%m%d", errors="coerce")
+    o["sponsor_key"] = o["sponsor"].map(normalize_company)
+    o = map_tickers(o, inp.listings, inp.overrides, date_col="approval_date")
+    o = o[o["map_method"].isin(["override", "auto_exact"])].dropna(subset=["ticker"])
+    hist = o[["ticker", "approval_date", "appl_no"]]
     out = []
     for _, e in ev.iterrows():
-        h = hist[(hist["ticker"] == e["ticker"]) & (hist["date"] < e["approval_date"])
-                 & (hist["ApplNo"] != e["appl_no"])]
+        h = hist[(hist["ticker"] == e["ticker"]) & (hist["approval_date"] < e["approval_date"])
+                 & (hist["appl_no"] != e["appl_no"])]
         out.append(len(h))
     return pd.Series(out, index=ev.index)
 
@@ -102,11 +105,9 @@ class Study:
 
 def build_study(inp: Inputs, benchmark: str = C.BENCHMARK) -> Study:
     ev = inp.events.copy()
-    steps = [("FDA CDER novel approvals 2015-2024", len(ev))]
-    ev = ev[ev["appl_no"].notna()]
-    steps.append(("matched to a Drugs@FDA application", len(ev)))
+    steps = [("Novel approvals 2015-2024 (Drugs@FDA: NDA type 1 + new-biologic BLAs)", len(ev))]
     ev = ev[ev["ticker"].notna()]
-    steps.append(("applicant mapped to a US exchange-listed ticker", len(ev)))
+    steps.append(("sponsor mapped to a US exchange-listed ticker", len(ev)))
     have_px = set(inp.prices["ticker"])
     ev = ev[ev["ticker"].isin(have_px)]
     steps.append(("price history available (yfinance)", len(ev)))
@@ -116,10 +117,10 @@ def build_study(inp: Inputs, benchmark: str = C.BENCHMARK) -> Study:
     ev["event_date"] = day_zero(ev["approval_date"], cal).values
     ev = ev[ev["event_date"].notna()]
     # Same ticker, same day 0 (e.g. two drugs approved together): one combined event.
-    ev = (ev.sort_values(["approval_date", "drug_name"])
+    ev = (ev.sort_values(["approval_date", "brand_name"])
             .groupby(["ticker", "event_date"], as_index=False)
-            .agg({**{c: "first" for c in ev.columns if c not in ("ticker", "event_date", "drug_name")},
-                  "drug_name": lambda s: " + ".join(s)}))
+            .agg({**{c: "first" for c in ev.columns if c not in ("ticker", "event_date", "brand_name")},
+                  "brand_name": lambda s: " + ".join(map(str, s))}))
     steps.append(("after merging same-ticker same-day approvals", len(ev)))
     ev["confounded"] = flag_confounded(ev, cal, C.CONFOUND_GAP).values
     ev = ev[~ev["confounded"]]
@@ -140,8 +141,9 @@ def build_study(inp: Inputs, benchmark: str = C.BENCHMARK) -> Study:
     # Characteristics, measured before the run-up (at day -30, the end of the estimation window).
     pos = {d: i for i, d in enumerate(returns.index)}
     ev["size_date"] = [returns.index[pos[d] + C.ESTIMATION_WINDOW[1]] for d in ev["event_date"]]
-    ev["mcap_usd"] = [market_cap(t, d, inp.prices, inp.splits, inp.shares)
-                      for t, d in zip(ev["ticker"], ev["size_date"])]
+    mc = [market_cap(t, d, inp.prices, inp.splits, inp.shares) for t, d in zip(ev["ticker"], ev["size_date"])]
+    ev["mcap_usd"] = [m for m, _ in mc]
+    ev["mcap_basis"] = [b for _, b in mc]
     ev["size_group"] = np.select([ev["mcap_usd"] < C.SMALL_CAP_USD, ev["mcap_usd"] >= C.SMALL_CAP_USD],
                                  ["small (<$2B)", "large (>=$2B)"], "unknown")
     ev["prior_approvals"] = prior_approvals(ev, inp).values

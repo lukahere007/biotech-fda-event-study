@@ -3,8 +3,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from fda_event.events import (core_company, extract_applicant, flag_confounded,
-                              normalize_brand, normalize_company)
+from fda_event.events import (core_company, define_novel_approvals, flag_confounded, ingredient_cores,
+                              map_tickers, normalize_brand, normalize_company)
 from fda_event.model import abnormal_returns, day_zero, market_model, to_returns
 from fda_event.stats import car, car_sd, caar_path, summarize
 
@@ -134,9 +134,35 @@ def test_name_normalisation():
     assert core_company(normalize_company("Alnylam Pharmaceuticals, Inc.")) == "ALNYLAM"
 
 
-def test_extract_applicant_from_letter_header():
-    header = ("DEPARTMENT OF HEALTH AND HUMAN SERVICES\nFood and Drug Administration\n"
-              "Silver Spring MD 20993\nNDA 212887\nNDA APPROVAL\nAcme Therapeutics, Inc.\n"
-              "Attention: Jane Doe\nVice President, Regulatory Affairs\n")
-    assert extract_applicant(header) == "Acme Therapeutics, Inc."
-    assert extract_applicant("") == ""
+def test_ingredient_cores_strip_biologic_suffix():
+    assert ingredient_cores("TRASTUZUMAB-ANNS; HYALURONIDASE-OYSK") == {"trastuzumab", "hyaluronidase"}
+    assert ingredient_cores(None) == set()
+
+
+def test_define_novel_approvals_keeps_nme_and_new_biologics_only():
+    apps = pd.DataFrame({"appl_no": ["NDA1", "NDA2", "BLA1", "BLA2", "BLA3"],
+                         "sponsor": ["A INC", "B INC", "C INC", "D INC", "E INC"]})
+    prods = pd.DataFrame({"appl_no": ["NDA1", "NDA2", "BLA1", "BLA2", "BLA3"],
+                          "brand_name": ["NEWPILL", "OLDPILL", "MABONE", "MABONE-BIOSIM", "NEWMAB"],
+                          "active_ingredients": ["NOVELIB", "ASPIRIN", "MABUMAB", "MABUMAB-XYZW", "NEWMAB-ABCD"]})
+    orig = pd.DataFrame({"appl_no": ["NDA1", "NDA2", "BLA1", "BLA2", "BLA3"],
+                         "approval_date": ["20180105", "20180106", "20100101", "20190101", "20190301"],
+                         "class_code": ["TYPE 1", "TYPE 3", None, None, None]})
+    ev = define_novel_approvals(apps, prods, orig, [2018, 2019])
+    # NME NDA kept, new-formulation NDA dropped, biosimilar of a 2010 biologic dropped, new biologic kept
+    assert sorted(ev["appl_no"]) == ["BLA3", "NDA1"]
+    assert set(ev["novel_basis"]) == {"NDA type 1 (NME)", "BLA new biologic"}
+
+
+def test_map_tickers_override_dates_and_auto_match():
+    listings = pd.DataFrame({"symbol": ["ACME", "BIGP"], "exchange": ["Nasdaq", "NYSE"],
+                             "security_name": ["Acme Therapeutics, Inc. - Common Stock",
+                                               "BigPharma Corp Common Stock"]})
+    ov = pd.DataFrame({"sponsor_key": ["SUBCO", "SUBCO", "PRIVCO"], "ticker": ["", "BIGP", ""],
+                       "valid_from": ["", "2019-06-01", ""], "valid_to": ["2019-05-31", "", ""],
+                       "status": ["acquired_delisted", "subsidiary_of_listed", "private"], "note": "x"})
+    ev = pd.DataFrame({"sponsor_key": ["ACME THERAPEUTICS", "SUBCO", "SUBCO", "PRIVCO"],
+                       "approval_date": pd.to_datetime(["2020-01-01", "2018-01-01", "2020-01-01", "2020-01-01"])})
+    m = map_tickers(ev, listings, ov)
+    assert list(m["ticker"].fillna("-")) == ["ACME", "-", "BIGP", "-"]
+    assert list(m["map_method"]) == ["auto_exact", "override", "override", "override"]
