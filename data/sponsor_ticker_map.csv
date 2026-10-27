@@ -238,3 +238,7 @@ BLA761184,,PFE,,,subsidiary_of_listed,Pfizer subsidiary
 ,BIOGEN MA,BIIB,,,subsidiary_of_listed,Biogen subsidiary
 NDA216718,,RETA,,,acquired_delisted,Skyclarys approved to Reata Pharmaceuticals Feb 2023 (acquired by Biogen Sept 2023)
 NDA217369,,,,,unverified,Zurzuvae co-developed by Sage and Biogen; which stock is 'the' event firm is ambiguous
+,OTSUKA,,,,foreign_not_us_listed,Otsuka Holdings: Tokyo-listed
+NDA211230,,JAZZ,,,approval_time_holder,Sunosi approved to Jazz Pharmaceuticals in 2019 (sold to Axsome 2022)
+NDA204370,,AGN,,,acquired_delisted,"Vraylar approved to Actavis/Forest in 2015 (Allergan, acquired by AbbVie 2020)"
+NDA208685,,,,,private,Emflaza (second NDA) approved to private Marathon Pharmaceuticals (sold to PTC Mar 2017)

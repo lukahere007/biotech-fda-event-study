@@ -180,3 +180,19 @@ def test_market_cap_undoes_split_adjustment():
     # no share count within 400 days -> unknown rather than a guess
     mcap, basis = market_cap("X", pd.Timestamp("2020-06-01"), prices, splits, shares)
     assert np.isnan(mcap) and basis == "missing"
+
+
+def test_define_novel_approvals_is_row_order_independent():
+    # One application with two ORIG rows on the approval date ('EFFICACY' listed first) and a
+    # second formulation (NDA2) of the same molecule approved the same day.
+    apps = pd.DataFrame({"appl_no": ["NDA1", "NDA2"], "sponsor": ["A INC", "A INC"]})
+    prods = pd.DataFrame({"appl_no": ["NDA1", "NDA2"], "brand_name": ["PILL", "PILL"],
+                          "active_ingredients": ["NOVELIB", "NOVELIB"]})
+    orig = pd.DataFrame({"appl_no": ["NDA2", "NDA1", "NDA1", "NDA2"],
+                         "approval_date": ["20180105"] * 4,
+                         "class_code": ["EFFICACY", "EFFICACY", "TYPE 1", "TYPE 1"],
+                         "review_priority": ["STANDARD"] * 4})
+    a = define_novel_approvals(apps, prods, orig, [2018])
+    b = define_novel_approvals(apps, prods, orig.iloc[::-1], [2018])
+    assert list(a["appl_no"]) == list(b["appl_no"]) == ["NDA1"]
+    assert a["class_code"].iloc[0] == "TYPE 1"

@@ -83,8 +83,20 @@ def define_novel_approvals(apps: pd.DataFrame, products: pd.DataFrame, orig: pd.
     """
     o = orig.copy()
     o["approval_date"] = pd.to_datetime(o["approval_date"].astype(str), format="%Y%m%d", errors="coerce")
-    o = o.dropna(subset=["approval_date"]).sort_values("approval_date")
-    o = o.drop_duplicates("appl_no")          # first original approval per application
+    o = o.dropna(subset=["approval_date"])
+    # An application can carry several ORIG/AP rows on its approval date (e.g. 'TYPE 1' and
+    # 'EFFICACY'); openFDA's row order is not stable, so aggregate instead of taking the first row.
+    o["class_code"] = o["class_code"].fillna("").astype(str)
+    if "review_priority" not in o:
+        o["review_priority"] = None
+    o["_type1"] = o["class_code"].str.upper().str.match(r"^TYPE 1(/|$)")
+    first = o.groupby("appl_no")["approval_date"].transform("min")
+    o = o[o["approval_date"] == first]
+    o = (o.sort_values(["appl_no", "_type1", "class_code"], ascending=[True, False, True])
+          .groupby("appl_no", as_index=False)
+          .agg(approval_date=("approval_date", "first"), class_code=("class_code", "first"),
+               review_priority=("review_priority", "first"), _type1=("_type1", "any")))
+    o = o.sort_values(["approval_date", "appl_no"]).reset_index(drop=True)
     prod = (products.groupby("appl_no")
                     .agg(brand_name=("brand_name", "first"),
                          active_ingredients=("active_ingredients", "first")).reset_index())
@@ -101,18 +113,18 @@ def define_novel_approvals(apps: pd.DataFrame, products: pd.DataFrame, orig: pd.
             seen.setdefault(c, r["approval_date"])
     o["new_biologic"] = is_new_bio
     # 'TYPE 1' or a combination like 'TYPE 1/4' -- but not 'TYPE 10' (new indication filed as a new NDA).
-    nme = (o["appl_type"] == "NDA") & o["class_code"].fillna("").str.upper().str.match(r"^TYPE 1(/|$)")
+    nme = (o["appl_type"] == "NDA") & o["_type1"]
     # BLA numbers 20xxxx-21xxxx are former NDAs 'deemed to be BLAs' in March 2020 (insulins,
     # hyaluronidase, etc.), not new biologics; CDER-licensed biologics are 125xxx / 761xxx.
     o["new_biologic"] &= ~o["appl_no"].str.match(r"^BLA2\d{5}$")
     o["novel_basis"] = np.where(nme, "NDA type 1 (NME)", np.where(o["new_biologic"], "BLA new biologic", ""))
     ev = o[(o["novel_basis"] != "") & o["approval_date"].dt.year.isin(years)].copy()
     ev["core_key"] = ev["cores"].map(lambda c: "|".join(sorted(c)))
-    ev = ev.drop_duplicates(["core_key", "approval_date"])
+    ev = ev.sort_values(["approval_date", "appl_no"]).drop_duplicates(["core_key", "approval_date"])
     a = apps.drop_duplicates("appl_no")[["appl_no", "sponsor"]]
     ev = ev.merge(a, on="appl_no", how="left")
     ev["year"] = ev["approval_date"].dt.year
-    return ev.drop(columns=["cores", "core_key", "new_biologic"]).reset_index(drop=True)
+    return ev.drop(columns=["cores", "core_key", "new_biologic", "_type1"]).reset_index(drop=True)
 
 
 # --------------------------------------------------------------------------- ticker mapping
