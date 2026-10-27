@@ -1,0 +1,10 @@
+{
+  "fetched_at_utc": "2026-10-27T18:28:58.875104+00:00",
+  "yfinance": "1.7.0",
+  "requested": 64,
+  "returned": 63,
+  "empty": [
+    "ALNY"
+  ],
+  "shares_tickers": 61
+}
