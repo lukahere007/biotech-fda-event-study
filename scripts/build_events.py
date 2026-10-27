@@ -1,6 +1,6 @@
 """Turn the raw openFDA + listing snapshots into data/events_mapped.csv.
 
-Offline (no network), so it can be re-run locally after editing the hand-reviewed
+Offline (no network), so it can be re-run locally after editing the hand-curated
 data/sponsor_ticker_map.csv. Also writes data/interim/sponsor_review.csv (one row per
 sponsor name with the automatic suggestion) which the hand review works from, and
 data/interim/novel_counts_by_year.csv (our count vs CDER's published annual count).

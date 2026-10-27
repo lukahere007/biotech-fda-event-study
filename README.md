@@ -39,7 +39,7 @@ Market cap is measured 30 trading days before the approval. 12 events have no ma
 | Step | Choice |
 |---|---|
 | **Events** | CDER novel approvals: Drugs@FDA original NDAs classed **Type 1 (new molecular entity)**, plus original BLAs for a **new biologic** (active ingredient never approved before, so biosimilars and reformulations are excluded). This gives 462 approvals for 2015–2024, compared with 465 in CDER's published yearly counts. Year-by-year counts match to within 1 ([`data/interim/novel_counts_by_year.csv`](data/interim/novel_counts_by_year.csv)). |
-| **Ticker** | Each approval is assigned to the company that **held it on the approval date**, not to today's owner. For example, Tibsovo goes to Agios rather than Servier, and Ongentys goes to Neurocrine rather than Amneal. Automatic name matching against current Nasdaq/NYSE listings is followed by a hand-reviewed override file, [`data/sponsor_ticker_map.csv`](data/sponsor_ticker_map.csv), with 243 rows, each with a status and a note. Sponsors that are foreign-only or OTC-only, private, nonprofit or unverified are excluded. |
+| **Ticker** | Each approval is assigned to the company that **held it on the approval date**, not to today's owner. For example, Tibsovo goes to Agios rather than Servier, and Ongentys goes to Neurocrine rather than Amneal. Automatic name matching against current Nasdaq/NYSE listings is followed by a hand-curated override file, [`data/sponsor_ticker_map.csv`](data/sponsor_ticker_map.csv), with 243 rows, each with a status and a note. The ownership histories in it were compiled from general knowledge of company histories and have not been independently checked against filings; corrections are welcome. Sponsors that are foreign-only or OTC-only, private, nonprofit or unverified are excluded. |
 | **Day 0** | The first trading day on or after the approval date. Weekend and holiday approvals roll forward. The FDA often announces after the 4 pm close, so the reaction can land on day 0 or day +1. The headline window **[0,+1]** covers both. |
 | **Normal returns** | Market model `R_i = α + β·R_XBI` fitted by OLS on the estimation window **[−250, −30]**, which needs at least 120 valid days. SPY is used as a robustness check. |
 | **Tests** | Cross-sectional t-test (robust to event-induced variance). **BMP** standardised test (Boehmer, Musumeci & Poulsen 1991), where the CAR variance includes market-model estimation error. Sign test (exact binomial). Wilcoxon signed-rank test. The plotted confidence bands are cross-sectional 95% intervals. |
@@ -69,7 +69,7 @@ The 80 events lost because acquired companies have no price history are the main
 
 - **Building an event study from scratch:** day-0 alignment, market-model estimation, CAR/CAAR, and both parametric (t, BMP) and non-parametric (sign, Wilcoxon) tests.
 - **Tests on synthetic data where the true effect is known:** a +5% jump injected on day 0 is recovered within the confidence interval. A jump on day +1 shows up in [0,+1] and not on day 0. Null data gives no excess false positives. Weekend and holiday approvals roll to the right trading day. The event list does not depend on openFDA's row order. Splits are undone correctly in the market-cap calculation.
-- **Honest data work:** each step that drops events is counted. Product ownership is traced back to the approval date rather than taken from today's sponsor field. The hand-curated mapping is a reviewed CSV with notes, not hidden code.
+- **Honest data work:** each step that drops events is counted. Product ownership is traced back to the approval date rather than taken from today's sponsor field. The hand-curated mapping is a CSV with a note per row, not hidden code.
 - **Reproducible fetching:** data comes from GitHub Actions because the development sandbox cannot reach FDA or market data hosts. fda.gov, accessdata.fda.gov and sec.gov also block GitHub's runners, so official equivalents were used instead (see *Data sources*).
 
 ## Reproduce
@@ -100,7 +100,7 @@ python scripts/fetch_market.py    # yfinance prices, splits, shares -> data/
 ```
 ├── data/
 │   ├── raw/                      # openFDA Drugs@FDA tables, exchange listings, fetch log
-│   ├── sponsor_ticker_map.csv    # hand-reviewed sponsor/product -> ticker overrides (with notes)
+│   ├── sponsor_ticker_map.csv    # hand-curated sponsor/product -> ticker overrides (with notes)
 │   ├── events_mapped.csv         # 462 novel approvals with mapping status
 │   ├── interim/                  # sponsor review sheet, yearly counts vs CDER
 │   ├── prices.parquet            # daily prices (event tickers + XBI, IBB, SPY), 2013-2025
@@ -119,7 +119,7 @@ python scripts/fetch_market.py    # yfinance prices, splits, shares -> data/
 
 ## Limitations
 
-- **Only good news.** Drugs@FDA records approvals. Complete Response Letters (rejections) are not public data, so this study looks only at the positive outcome of a binary event. The average approval-day return therefore cannot be read as "what the market expected". The rejection side, which is often a very bad day for small caps, is missing.
+- **Only good news.** Drugs@FDA records approvals. Complete Response Letters (rejections) were historically not public (FDA only began publishing them in 2025), so this study looks only at the positive outcome of a binary event. The average approval-day return therefore cannot be read as "what the market expected". The rejection side, which is often a very bad day for small caps, is missing.
 - **Survivorship.** 80 mapped events have no price history because the company was later acquired or went bankrupt (see above).
 - **Current-sponsor field.** Drugs@FDA lists today's application holder. Approval-date ownership was traced by hand: 59 product-level overrides plus date-bounded sponsor rules (e.g. Alexion before and after AstraZeneca). Mistakes are possible, so each decision is in the CSV with a note, and 9 unclear cases were excluded rather than guessed.
 - **Small subgroups.** With 36 small-cap events the CI spans +2% to +15%. Many windows and groups are tested, so the marginal results (pre-event run-up, post-event reversal, run-up vs reaction) are exploratory.
@@ -130,7 +130,7 @@ python scripts/fetch_market.py    # yfinance prices, splits, shares -> data/
 ## Data sources and licences
 
 - **openFDA Drugs@FDA** bulk file (`download.open.fda.gov/drug/drugsfda/`), snapshot dated 2026-10-27: applications, products and submissions, including chemical-type class codes. openFDA data is public domain ([open.fda.gov/license](https://open.fda.gov/license/)). The FDA's own fda.gov and Drugs@FDA download pages, and SEC EDGAR, return 403/404 to GitHub-hosted runners, so they could not be fetched reproducibly.
-- **CDER novel approval counts** per year (45, 22, 46, 59, 48, 53, 50, 37, 55, 50) are from FDA's "Novel Drug Approvals for YYYY" pages. They are used only as a sanity check.
+- **CDER novel approval counts** per year (45, 22, 46, 59, 48, 53, 50, 37, 55, 50) are the totals published on FDA's "Novel Drug Approvals for YYYY" pages, entered by hand rather than downloaded (fda.gov blocks GitHub's runners). They are used only as a sanity check.
 - **Nasdaq Trader symbol directories** (`nasdaqlisted.txt`, `otherlisted.txt`) for current exchange listings.
 - **Yahoo Finance via [yfinance](https://github.com/ranaroussi/yfinance)**: daily adjusted prices, splits and shares outstanding for event tickers, XBI, IBB and SPY. Use is subject to Yahoo's terms and is for research and education only.
 - MacKinlay, A. C. (1997). Event Studies in Economics and Finance. *Journal of Economic Literature* 35(1), 13–39.
