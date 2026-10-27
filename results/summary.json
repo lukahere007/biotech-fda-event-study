@@ -1,0 +1,66 @@
+{
+  "n_events": 234,
+  "n_tickers": 76,
+  "size_groups": {
+    "Large (>$20B)": 141,
+    "Mid ($2-20B)": 45,
+    "Small (<$2B)": 36,
+    "Unknown": 12
+  },
+  "first_approval": 50,
+  "runup_vs_reaction": {
+    "Small (<$2B)": {
+      "n": 36,
+      "spearman_rho": -0.307,
+      "p": 0.0685
+    },
+    "Mid ($2-20B)": {
+      "n": 45,
+      "spearman_rho": 0.092,
+      "p": 0.5468
+    },
+    "Large (>$20B)": {
+      "n": 141,
+      "spearman_rho": -0.087,
+      "p": 0.3053
+    }
+  },
+  "largest_moves": [
+    {
+      "ticker": "TARS",
+      "brand_name": "XDEMVY",
+      "event_date": "2023-07-24",
+      "CAR[0,+1]": "-0.2600936303547808"
+    },
+    {
+      "ticker": "VSTM",
+      "brand_name": "COPIKTRA",
+      "event_date": "2018-09-24",
+      "CAR[0,+1]": "-0.18844687930795787"
+    },
+    {
+      "ticker": "NVO",
+      "brand_name": "ALHEMO",
+      "event_date": "2024-12-20",
+      "CAR[0,+1]": "-0.14064304258063326"
+    },
+    {
+      "ticker": "KPTI",
+      "brand_name": "XPOVIO",
+      "event_date": "2019-07-03",
+      "CAR[0,+1]": "0.3625409356633081"
+    },
+    {
+      "ticker": "ZVRA",
+      "brand_name": "AZSTARYS",
+      "event_date": "2021-03-02",
+      "CAR[0,+1]": "0.41835947650055294"
+    },
+    {
+      "ticker": "SRPT",
+      "brand_name": "EXONDYS 51",
+      "event_date": "2016-09-19",
+      "CAR[0,+1]": "0.8288606889506571"
+    }
+  ]
+}

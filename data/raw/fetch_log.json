@@ -1,0 +1,19 @@
+{
+  "fetched_at_utc": "2026-10-27T19:08:26.123270+00:00",
+  "sources": {
+    "openfda_drugsfda": {
+      "url": "https://download.open.fda.gov/drug/drugsfda/drug-drugsfda-0001-of-0001.json.zip",
+      "last_updated": "2026-10-27",
+      "applications": 29417,
+      "products": 30244,
+      "orig_approvals": 25625
+    },
+    "nasdaqtrader_symbol_directory": {
+      "urls": [
+        "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt",
+        "https://www.nasdaqtrader.com/dynamic/SymDir/otherlisted.txt"
+      ],
+      "rows": 7477
+    }
+  }
+}

@@ -1,0 +1,46 @@
+name: Fetch data
+
+# Pulls FDA, SEC and price data (the dev sandbox has no access to these hosts)
+# and commits a snapshot under data/. The bot commit only touches generated
+# files under data/, never the trigger paths below, so it cannot loop.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/github-projects-improve-nh2reo]
+    paths:
+      - scripts/fetch_sources.py
+      - scripts/build_events.py
+      - scripts/fetch_market.py
+      - data/sponsor_ticker_map.csv
+      - .github/workflows/fetch-data.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt -r requirements-fetch.txt
+      - name: Fetch FDA + SEC sources
+        run: python scripts/fetch_sources.py
+      - name: Build event table (applicant -> ticker)
+        run: python scripts/build_events.py
+      - name: Fetch prices, splits, shares outstanding
+        run: python scripts/fetch_market.py
+      - name: Commit data snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Update data snapshot"
+          for i in 1 2 3 4; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push && break; sleep $((2**i)); done
