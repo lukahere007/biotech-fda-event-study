@@ -78,7 +78,7 @@ def define_novel_approvals(apps: pd.DataFrame, products: pd.DataFrame, orig: pd.
       including combinations such as 'TYPE 1/4').
     * BLA: original approval whose active ingredient(s) never appeared in any earlier
       original NDA/BLA approval -> a new therapeutic biologic. This excludes biosimilars,
-      new formulations and the 2020 'deemed BLA' transitions of insulin etc.
+      new formulations and the 2020 'deemed BLA' transitions of insulin etc. (BLA 2xxxxx).
     One row per application; same-day approvals of the same molecule are collapsed.
     """
     o = orig.copy()
@@ -100,7 +100,11 @@ def define_novel_approvals(apps: pd.DataFrame, products: pd.DataFrame, orig: pd.
         for c in r["cores"]:
             seen.setdefault(c, r["approval_date"])
     o["new_biologic"] = is_new_bio
-    nme = (o["appl_type"] == "NDA") & o["class_code"].fillna("").str.upper().str.startswith("TYPE 1")
+    # 'TYPE 1' or a combination like 'TYPE 1/4' -- but not 'TYPE 10' (new indication filed as a new NDA).
+    nme = (o["appl_type"] == "NDA") & o["class_code"].fillna("").str.upper().str.match(r"^TYPE 1(/|$)")
+    # BLA numbers 20xxxx-21xxxx are former NDAs 'deemed to be BLAs' in March 2020 (insulins,
+    # hyaluronidase, etc.), not new biologics; CDER-licensed biologics are 125xxx / 761xxx.
+    o["new_biologic"] &= ~o["appl_no"].str.match(r"^BLA2\d{5}$")
     o["novel_basis"] = np.where(nme, "NDA type 1 (NME)", np.where(o["new_biologic"], "BLA new biologic", ""))
     ev = o[(o["novel_basis"] != "") & o["approval_date"].dt.year.isin(years)].copy()
     ev["core_key"] = ev["cores"].map(lambda c: "|".join(sorted(c)))
@@ -147,36 +151,49 @@ def map_tickers(ev: pd.DataFrame, listings: pd.DataFrame, overrides: pd.DataFram
                 date_col: str | None = "approval_date") -> pd.DataFrame:
     """Assign a ticker per event. Hand-reviewed overrides win over automatic matches.
 
-    overrides columns: sponsor_key, ticker (blank = no usable US listing), valid_from,
-    valid_to (optional ISO dates bounding when that sponsor name meant that ticker, e.g. a
-    subsidiary maps to its acquirer only after the deal closed), status, note.
+    overrides columns:
+      appl_no      optional; if set the row applies to that one application (product-level,
+                   e.g. a drug approved to a small biotech that a larger company owns today)
+      sponsor_key  sponsor name (normalised on load) for sponsor-level rows
+      ticker       blank = no usable US listing at the approval date
+      valid_from / valid_to  optional ISO dates bounding when a sponsor name meant that ticker
+                   (e.g. a subsidiary maps to its acquirer only after the deal closed)
+      status, note free text documenting the decision
     """
     lk = listing_lookup(listings)
     ov = overrides.copy()
+    for c in ("appl_no", "valid_from", "valid_to"):
+        if c not in ov:
+            ov[c] = None
     ov["sponsor_key"] = ov["sponsor_key"].map(normalize_company)
-    ov["valid_from"] = pd.to_datetime(ov.get("valid_from"), errors="coerce")
-    ov["valid_to"] = pd.to_datetime(ov.get("valid_to"), errors="coerce")
-    by_key = {k: g for k, g in ov.groupby("sponsor_key")}
+    ov["valid_from"] = pd.to_datetime(ov["valid_from"], errors="coerce")
+    ov["valid_to"] = pd.to_datetime(ov["valid_to"], errors="coerce")
+    has_appl = ov["appl_no"].fillna("").str.len() > 0
+    by_appl = ov[has_appl].drop_duplicates("appl_no", keep="last").set_index("appl_no")
+    by_key = {k: g for k, g in ov[~has_appl].groupby("sponsor_key")}
+
+    def pick(row: pd.Series) -> tuple[str | None, str, str]:
+        t = row["ticker"]
+        return (t.strip() if isinstance(t, str) and t.strip() else None), "override", row["status"]
+
     tick, method, status = [], [], []
     for _, r in ev.iterrows():
-        key = r["sponsor_key"]
-        if key in by_key:
+        appl, key = r.get("appl_no"), r["sponsor_key"]
+        if isinstance(appl, str) and appl in by_appl.index:
+            t, m, st = pick(by_appl.loc[appl])
+        elif key in by_key:
             g = by_key[key]
             if date_col is not None:
                 d = r[date_col]
                 g = g[(g["valid_from"].isna() | (g["valid_from"] <= d)) & (g["valid_to"].isna() | (d <= g["valid_to"]))]
             if g.empty:
-                tick.append(None), method.append("override"), status.append("outside_override_dates")
-                continue
-            t = g["ticker"].iloc[-1]
-            tick.append(t if isinstance(t, str) and t.strip() else None)
-            method.append("override")
-            status.append(g["status"].iloc[-1])
+                t, m, st = None, "override", "outside_override_dates"
+            else:
+                t, m, st = pick(g.iloc[-1])
         else:
             t, m = auto_match(key, lk)
-            tick.append(t)
-            method.append(m)
-            status.append("listed" if t else "unmapped")
+            st = "listed" if t else "unmapped"
+        tick.append(t), method.append(m), status.append(st)
     out = ev.copy()
     out["ticker"], out["map_method"], out["map_status"] = tick, method, status
     return out

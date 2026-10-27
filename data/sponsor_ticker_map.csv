@@ -1,1 +1,240 @@
-sponsor_key,ticker,valid_from,valid_to,status,note
+appl_no,sponsor_key,ticker,valid_from,valid_to,status,note
+,JANSSEN BIOTECH,JNJ,,,subsidiary_of_listed,Janssen is Johnson & Johnson's pharma unit
+,JANSSEN PRODS,JNJ,,,subsidiary_of_listed,Janssen is Johnson & Johnson's pharma unit
+,GLAXOSMITHKLINE,GSK,,,listed,GSK plc NYSE ADR
+,VIIV HLTHCARE,GSK,,,subsidiary_of_listed,ViiV Healthcare is majority-owned by GSK
+,MERCK SHARP DOHME,MRK,,,subsidiary_of_listed,Merck & Co. operating subsidiary
+,MSD SUB MERCK,MRK,,,subsidiary_of_listed,Merck & Co. subsidiary
+,MSD MERCK,MRK,,,subsidiary_of_listed,Merck & Co. subsidiary
+,MSD,MRK,,,subsidiary_of_listed,Merck & Co. subsidiary
+,BRISTOL,BMY,,,subsidiary_of_listed,Bristol-Myers Squibb
+,BRISTOL MYERS,BMY,,,subsidiary_of_listed,Bristol-Myers Squibb
+,ALEXION PHARMACEUTICALS,ALXN,,2021-07-20,acquired_delisted,Independent (ALXN) until AstraZeneca closed the acquisition 2021-07-21
+,ALEXION PHARMACEUTICALS,AZN,2021-07-21,,subsidiary_of_listed,AstraZeneca subsidiary after 2021-07-21
+,ASTRAZENECA UK,AZN,,,subsidiary_of_listed,AstraZeneca subsidiary
+,AVID RADIOPHARMS,LLY,,,subsidiary_of_listed,Avid Radiopharmaceuticals is an Eli Lilly subsidiary
+,LOXO ONCOL,LLY,,,subsidiary_of_listed,Loxo Oncology acquired by Eli Lilly in 2019
+,GENZYME,SNY,,,subsidiary_of_listed,Sanofi subsidiary
+,SANOFI AVENTIS,SNY,,,subsidiary_of_listed,Sanofi subsidiary
+,SANOFI SYNTHELABO,SNY,,,subsidiary_of_listed,Sanofi subsidiary
+,ABLYNX,SNY,,,subsidiary_of_listed,"Ablynx acquired by Sanofi in 2018, before the 2019 approval"
+,NOVO,NVO,,,listed,Novo Nordisk NYSE ADR
+,NOVO NORDISK,NVO,,,listed,Novo Nordisk NYSE ADR
+,TEVA BRANDED PHARMACEUTICALS,TEVA,,,subsidiary_of_listed,Teva subsidiary
+,TEVA PHARMACEUTICALS,TEVA,,,subsidiary_of_listed,Teva subsidiary
+,TEVA RESPIRATORY,TEVA,,,subsidiary_of_listed,Teva subsidiary
+,FOLDRX PHARMACEUTICALS,PFE,,,subsidiary_of_listed,FoldRx acquired by Pfizer (via Wyeth) in 2010
+,WYETH PHARMACEUTICALS,PFE,,,subsidiary_of_listed,Wyeth is a Pfizer subsidiary
+,ANACOR PHARMACEUTICALS,PFE,,,subsidiary_of_listed,"Anacor acquired by Pfizer June 2016, before the Dec 2016 approval"
+,KAI PHARMACEUTICALS,AMGN,,,subsidiary_of_listed,KAI Pharmaceuticals acquired by Amgen in 2012
+,VALEANT LUXEMBOURG,BHC,,,subsidiary_of_listed,"Valeant (now Bausch Health, BHC)"
+,TG THERAPS,TGTX,,,listed,TG Therapeutics
+,SAREPTA THERAPS,SRPT,,,listed,Sarepta Therapeutics
+,ESPERION THERAPS,ESPR,,,approval_time_holder,Esperion Therapeutics (not in the Oct-2026 listing snapshot; price history from yfinance if available)
+,KARYOPHARM THERAPS,KPTI,,,listed,Karyopharm Therapeutics
+,CATALYST PHARMACEUTICALS,CPRX,,,approval_time_holder,Catalyst Pharmaceuticals (not in the Oct-2026 listing snapshot; price history from yfinance if available)
+,AMICUS THERAPEUTICS,FOLD,,,approval_time_holder,Amicus Therapeutics (not in the Oct-2026 listing snapshot; price history from yfinance if available)
+,APELLIS PHARMACEUTICALS,APLS,,,approval_time_holder,Apellis Pharmaceuticals (not in the Oct-2026 listing snapshot; price history from yfinance if available)
+,ASCENDIS PHARMACEUTICALS BONE,ASND,,,subsidiary_of_listed,Ascendis Pharma (Nasdaq ADS)
+,GENMAB,GMAB,,,listed,Genmab Nasdaq ADS
+,BEIGENE,ONC,,,listed,"BeiGene, renamed BeOne Medicines (ticker BGNE -> ONC)"
+,DAY ONE BIOPHARMS,DAWN,,,approval_time_holder,Day One Biopharmaceuticals (not in the Oct-2026 listing snapshot; price history from yfinance if available)
+,ITERUM THERAPEUTICS,ITRM,,,approval_time_holder,Iterum Therapeutics (not in the Oct-2026 listing snapshot; price history from yfinance if available)
+,PHARMING,PHAR,,,listed,Pharming Group Nasdaq ADS
+,TREVENA,TRVN,,,approval_time_holder,Trevena (not in the Oct-2026 listing snapshot; price history from yfinance if available)
+,ZEVRA DENMARK,ZVRA,,,subsidiary_of_listed,Zevra Therapeutics subsidiary
+,ENTASIS THERAPEUTICS,INVA,,,subsidiary_of_listed,"Entasis acquired by Innoviva in 2022, before the 2023 approval"
+,PROGENICS PHARMACEUTICALS,LNTH,,,subsidiary_of_listed,"Progenics acquired by Lantheus in June 2020, before the 2021 approval"
+,MERUS N V,MRUS,,,approval_time_holder,Merus N.V. (Nasdaq) (not in the Oct-2026 listing snapshot; price history from yfinance if available)
+,CHECKPOINT THERAPEUTICS,CKPT,,,acquired_delisted,Checkpoint Therapeutics (acquired by Sun Pharma 2025)
+,ARRAY BIOPHARMA,ARRY,,,acquired_delisted,"Array BioPharma, acquired by Pfizer 2019"
+,AKCEA THERAPS,AKCA,,,acquired_delisted,"Akcea Therapeutics (Nasdaq), acquired by Ionis 2020"
+,AKARX,DOVA,,,acquired_delisted,AkaRx is a subsidiary of Dova Pharmaceuticals (acquired by Sobi 2019)
+,AVEO PHARMACEUTICALS,AVEO,,,acquired_delisted,"AVEO, acquired by LG Chem 2023"
+,BLUEPRINT MEDICINES,BPMC,,,acquired_delisted,"Blueprint Medicines, acquired by Sanofi 2025"
+,CELGENE,CELG,,,acquired_delisted,"Celgene, acquired by BMS 2019-11-20 (after this approval)"
+,CHEMOCENTRYX,CCXI,,,acquired_delisted,"ChemoCentryx, acquired by Amgen 2022"
+,DECIPHERA PHARMACEUTICALS,DCPH,,,acquired_delisted,"Deciphera, acquired by Ono 2024"
+,EPIZYME,EPZM,,,acquired_delisted,"Epizyme, acquired by Ipsen 2022"
+,GLOBAL BLOOD THERAPS,GBT,,,acquired_delisted,"Global Blood Therapeutics, acquired by Pfizer 2022"
+,HORIZON THERAPEUTICS IRELAND,HZNP,,,acquired_delisted,"Horizon Therapeutics, acquired by Amgen 2023"
+,IMMUNOGEN,IMGN,,,acquired_delisted,"ImmunoGen, acquired by AbbVie 2024"
+,IMMUNOMEDICS,IMMU,,,acquired_delisted,"Immunomedics, acquired by Gilead Oct 2020"
+,INTERCEPT,ICPT,,,acquired_delisted,"Intercept, acquired by Alfasigma 2023"
+,INTRA CELLULAR,ITCI,,,acquired_delisted,"Intra-Cellular Therapies, acquired by J&J 2025"
+,KADMON PHARMACEUTICALS,KDMN,,,acquired_delisted,"Kadmon, acquired by Sanofi Nov 2021"
+,LA JOLLA PHARMACEUTICALS,LJPC,,,acquired_delisted,"La Jolla Pharmaceutical, acquired by Innoviva 2022"
+,MORPHOSYS,MOR,,,acquired_delisted,"MorphoSys ADS, acquired by Novartis 2024"
+,NPS PHARMACEUTICALS,NPSP,,,acquired_delisted,"NPS Pharmaceuticals, acquired by Shire Feb 2015 (after this approval)"
+,PARATEK PHARMACEUTICALS,PRTK,,,acquired_delisted,"Paratek, taken private 2023"
+,PORTOLA PHARMACEUTICALS,PTLA,,,acquired_delisted,"Portola, acquired by Alexion 2020"
+,PROVENTION BIO,PRVB,,,acquired_delisted,"Provention Bio, acquired by Sanofi 2023"
+,RADIUS,RDUS,,,acquired_delisted,"Radius Health, taken private 2022"
+,REVANCE THERAPEUTICS,RVNC,,,acquired_delisted,"Revance, acquired by Crown Laboratories 2025"
+,SAGE THERAPEUTICS SUPERNUS,SAGE,,,acquired_delisted,Sage Therapeutics held Zulresso at approval (acquired by Supernus 2025)
+,SEAGEN,SGEN,,,acquired_delisted,"Seagen, acquired by Pfizer Dec 2023"
+,SPECTRUM PHARMACEUTICALS,SPPI,,,acquired_delisted,"Spectrum, acquired by Assertio 2023"
+,SPRINGWORKS,SWTX,,,acquired_delisted,"SpringWorks, acquired by Merck KGaA 2025"
+,TETRAPHASE PHARMACEUTICALS,TTPH,,,acquired_delisted,"Tetraphase, acquired by La Jolla 2020"
+,VIELA BIO,VIE,,,acquired_delisted,"Viela Bio, acquired by Horizon 2021"
+,Y MABS THERAPEUTICS,YMAB,,,acquired_delisted,Y-mAbs Therapeutics
+,REMPEX,MDCO,,,acquired_delisted,Rempex was a subsidiary of The Medicines Company (acquired by Novartis 2020)
+,DYAX,SHPG,,,acquired_delisted,Dyax was owned by Shire (acquired by Takeda Jan 2019)
+,SALIX,SGYP,,,acquired_delisted,Trulance was approved to Synergy Pharmaceuticals (bankrupt 2018; sold to Salix/Bausch)
+,PHARMAAND,CLVS,,,acquired_delisted,Rubraca was approved to Clovis Oncology (bankrupt 2022; sold to pharma&)
+,PHARMACOSMOS,GTHX,,,acquired_delisted,Cosela was approved to G1 Therapeutics (acquired by Pharmacosmos 2024)
+,COSETTE,AMAG,,,acquired_delisted,Vyleesi NDA was held by AMAG Pharmaceuticals at approval (later Cosette)
+,HONG KONG,NBRV,,,acquired_delisted,Xenleta was approved to Nabriva Therapeutics (wound down 2023)
+,IMMEDICA PHARMACEUTICALS,MRNS,,,acquired_delisted,Ztalmy was approved to Marinus Pharmaceuticals (acquired by Immedica 2025)
+,SOBI,CTIC,,,acquired_delisted,Vonjo was approved to CTI BioPharma (acquired by Sobi 2023)
+,COMMAVE SUB,ZVRA,,,approval_time_holder,"Azstarys NDA was KemPharm's at approval (KemPharm renamed Zevra, KMPH -> ZVRA)"
+,STEMLINE THERAPEUTICS,STML,,2020-06-30,acquired_delisted,Stemline independent until acquired by Menarini in 2020
+,STEMLINE THERAPEUTICS,,2020-07-01,,private,Stemline is a subsidiary of private Menarini after 2020
+,CIPLA,AKAO,,,acquired_delisted,Zemdri was approved to Achaogen (bankrupt 2019; assets sold to Cipla)
+,AETERNA ZENTARIS,AEZS,,,acquired_delisted,Aeterna Zentaris (Nasdaq) at approval
+,GENENTECH,,,,foreign_not_us_listed,Roche subsidiary; Roche trades only OTC in the US
+,HOFFMANN LA ROCHE,,,,foreign_not_us_listed,Roche trades only OTC in the US
+,ASTELLAS,,,,foreign_not_us_listed,Tokyo-listed; US OTC only
+,DAIICHI SANKYO,,,,foreign_not_us_listed,Tokyo-listed; US OTC only
+,EISAI,,,,foreign_not_us_listed,Tokyo-listed; US OTC only
+,KYOWA KIRIN,,,,foreign_not_us_listed,Tokyo-listed
+,TAIHO ONCOLOGY,,,,foreign_not_us_listed,Otsuka group (Tokyo-listed)
+,SHIONOGI,,,,foreign_not_us_listed,Tokyo-listed; US OTC only
+,NIPPON SHINYAKU,,,,foreign_not_us_listed,Tokyo-listed
+,VANCOCIN ITALIA,,,,foreign_not_us_listed,Mulpleta was approved to Shionogi (Tokyo-listed)
+,UCB,,,,foreign_not_us_listed,Euronext Brussels; US OTC only
+,IPSEN,,,,foreign_not_us_listed,Euronext Paris; US OTC only
+,BAYER HEALTHCARE,,,,foreign_not_us_listed,Bayer: Frankfurt-listed; US OTC only
+,BAYER HLTHCARE,,,,foreign_not_us_listed,Bayer: Frankfurt-listed; US OTC only
+,EMD SERONO,,,,foreign_not_us_listed,Merck KGaA: Frankfurt-listed
+,FRESENIUS KABI,,,,foreign_not_us_listed,Fresenius: Frankfurt-listed
+,SUN PHARMACEUTICALS,,,,foreign_not_us_listed,Sun Pharma: India-listed
+,SUN PHARMACEUTICALS GLOBAL,,,,foreign_not_us_listed,Sun Pharma: India-listed
+,SUN PHARMACEUTICALS INDS,,,,foreign_not_us_listed,Sun Pharma: India-listed
+,IDORSIA,,,,foreign_not_us_listed,SIX Swiss Exchange
+,ACTELION,,,,foreign_not_us_listed,SIX Swiss Exchange (pre-J&J)
+,ACACIA,,,,foreign_not_us_listed,Acacia Pharma: Euronext Brussels
+,LXO IRELAND,,,,foreign_not_us_listed,Barhemsys was approved to Acacia Pharma (Euronext Brussels)
+,COSMO TECHNOLOGIES,,,,foreign_not_us_listed,Cosmo Pharmaceuticals: SIX
+,CLIVUNEL,,,,foreign_not_us_listed,Clinuvel: ASX; US OTC only
+,MAYNE PHARMACEUTICALS,,,,foreign_not_us_listed,Mayne Pharma: ASX
+,BOTANIX SB,,,,foreign_not_us_listed,Botanix: ASX
+,GUERBET,,,,foreign_not_us_listed,Euronext Paris
+,HUGEL,,,,foreign_not_us_listed,KOSDAQ
+,PHARMAESSENTIA,,,,foreign_not_us_listed,Taipei Exchange
+,SK LIFE,,,,foreign_not_us_listed,SK Biopharmaceuticals: KOSPI
+,RECORDATI RARE,,,,foreign_not_us_listed,Recordati: Borsa Italiana
+,RECORDATI RARE DISEASES,,,,foreign_not_us_listed,Recordati: Borsa Italiana
+,LUNDBECK SEATTLE BIOPHARMACEUTICALS,,,,foreign_not_us_listed,Lundbeck (Copenhagen) owned Alder before the 2020 approval
+,ISTX,,,,foreign_not_us_listed,Zevtera NDA held by Basilea (SIX)
+,SHIELD TX,,,,foreign_not_us_listed,Shield Therapeutics: London AIM
+,POLAREAN,,,,foreign_not_us_listed,Polarean: London AIM
+,MDD,,,,foreign_not_us_listed,Xadago approved to Newron (SIX)
+,GALDERMA LABORATORIES,,,,foreign_not_us_listed,Galderma: private (2019) / SIX (2024)
+,ALMIRALL,,,,foreign_not_us_listed,Almirall: Madrid-listed (bought Allergan's dermatology unit before the Seysara approval)
+,VIFOR PHARMACEUTICALS,RLYP,,,acquired_delisted,Veltassa was approved to Relypsa (acquired by Galenica/Vifor 2016)
+,ZEALAND PHARMACEUTICALS,,,,unverified,Zealand (Copenhagen); US ADS listing status at 2021 not verified
+,THERATECHNOLOGIES,,,,unverified,Trogarzo BLA holder at approval (TaiMed vs Theratechnologies) not verified
+,MALLINCKRODT IRELAND,,,,unverified,Mallinckrodt's listing in Sept 2022 (post-bankruptcy) not verified
+,LNHC,,,,unverified,LNHC Inc ownership at each approval not verified
+,CHIESI,,,,private,Private company
+,CHIESI FARMACEUTICI,,,,private,Private company
+,BOEHRINGER INGELHEIM,,,,private,Private company
+,AMIVAS,,,,private,Private company
+,AOP HLTH,,,,private,Private company
+,AYRMID PHARMACEUTICALS,,,,private,Private company
+,BIOCODEX,,,,private,Private company
+,BLUE EARTH,,,,private,Private company
+,BRACCO,,,,private,Private company
+,BRAINTREE LABORATORIES,,,,private,Private company
+,CHEMO RESEARCH SL,,,,private,Private company
+,CURIUM,,,,private,Private company
+,DOMPE FARMACEUTICI,,,,private,Private company
+,DUTCH OPHTHALMIC,,,,private,Private company
+,ELUSYS THERAPEUTICS,,,,private,Private company
+,EVIVE BIOTECHNOLOGY,,,,private,Private company
+,FABRE KRAMER,,,,private,Private company
+,GISKIT,,,,private,Private company
+,HELSINN HLTHCARE,,,,private,Private company
+,INTRABIO,,,,private,Private company
+,ITALFARMACO,,,,private,Private company
+,LEO PHARMACEUTICALS,,,,private,Private company
+,LUMICELL,,,,private,Private company
+,MYCOVIA PHARMACEUTICALS,,,,private,Private company
+,NOVIMMUNE S A,,,,private,Private company
+,OCUVEX THERAPEUTICS,,,,private,Private company
+,ON TARGET LABORATORIES,,,,private,Private company
+,ORCHID PHARMACEUTICALS,,,,private,Private company
+,RIDGEBACK BIOTHERAPEUTICS,,,,private,Private company
+,THERACOSBIO,,,,private,Private company
+,XCOVERY,,,,private,Private company
+,SPROUT PHARMACEUTICALS,,,,private,Private company
+,MELINTA,,,,private,Private company
+,SERVIER,,,,private,Private company
+,SERVIER PHARMACEUTICALS,,,,private,Private company
+,MUNDIPHARMA,,,,private,Private company
+,EVOFEM,,,,private,Private company
+,BTG,,,,private,Private company
+,BIOCORRX PHARMACEUTICALS,,,,private,Private company
+,BDSI,,,,private,Private company
+,FEINSTEIN,,,,nonprofit_or_academic,Nonprofit / academic sponsor
+,UIHC PET IMAGING,,,,nonprofit_or_academic,Nonprofit / academic sponsor
+,UNIV CA LOS ANGELES,,,,nonprofit_or_academic,Nonprofit / academic sponsor
+,MDGH,,,,nonprofit_or_academic,Nonprofit / academic sponsor
+NDA206494,,AGN,,,acquired_delisted,"Avycaz approved to Forest/Actavis (later Allergan, acquired by AbbVie 2020)"
+NDA206333,,KYTH,,,acquired_delisted,Kybella approved to Kythera (acquired by Allergan Oct 2015)
+NDA206940,,AGN,,,acquired_delisted,Viberzi approved to Allergan/Actavis (acquired by AbbVie 2020)
+NDA211765,,AGN,,,acquired_delisted,Ubrelvy approved to Allergan Dec 2019 (AbbVie deal closed May 2020)
+NDA208700,,NVS,,,subsidiary_of_listed,Lutathera: Novartis had completed its tender for Advanced Accelerator Applications (Jan 2018)
+NDA208547,,AAAP,,,acquired_delisted,Netspot approved to Advanced Accelerator Applications (Nasdaq AAAP) in 2016
+NDA208254,,AERI,,,acquired_delisted,Rhopressa approved to Aerie Pharmaceuticals (acquired by Alcon 2022)
+NDA212489,,NBIX,,,approval_time_holder,Ongentys approved to Neurocrine Biosciences in 2020
+NDA208073,,SHPG,,,acquired_delisted,Xiidra approved to Shire in 2016 (Shire acquired by Takeda 2019)
+NDA207795,,BHC,,,approval_time_holder,Vyzulta approved to Bausch + Lomb when it was part of Valeant/Bausch Health
+NDA216340,,MRTX,,,acquired_delisted,Krazati approved to Mirati Therapeutics (acquired by BMS Jan 2024)
+NDA212327,,CELG,,,acquired_delisted,Inrebic approved to Celgene Aug 2019 (BMS deal closed Nov 2019)
+NDA209606,,CELG,,,acquired_delisted,Idhifa NDA held by Celgene in 2017
+NDA215239,,,,,unverified,Agamree: NDA holder at approval (Santhera vs Catalyst) not verified
+NDA208945,,,,,unverified,Xepi: holder at approval not verified
+NDA208447,,TSRO,,,acquired_delisted,Zejula approved to Tesaro (acquired by GSK Jan 2019)
+NDA214900,,SCYX,,,approval_time_holder,Brexafemme approved to Scynexis in 2021 (licensed to GSK 2023)
+NDA214622,,BBIO,,,approval_time_holder,"Truseltiq approved to QED Therapeutics, a BridgeBio affiliate"
+NDA214018,,BBIO,,,approval_time_holder,"Nulibry approved to Origin Biosciences, a BridgeBio affiliate"
+NDA213969,,EIGR,,,acquired_delisted,Zokinvy approved to Eiger BioPharmaceuticals (bankrupt 2024)
+BLA761104,,AZN,,,approval_time_holder,Lumoxiti approved to AstraZeneca/MedImmune (rights returned to Innate later)
+NDA207988,,AZN,,,approval_time_holder,Zurampic approved to AstraZeneca (licensed to Ironwood 2016)
+NDA210365,,GWPH,,,acquired_delisted,Epidiolex approved to GW Pharmaceuticals (acquired by Jazz 2021)
+NDA215498,,ALBO,,,acquired_delisted,Bylvay approved to Albireo (acquired by Ipsen 2023)
+NDA217389,,VRNA,,,acquired_delisted,Ohtuvayre approved to Verona Pharma (acquired by Merck 2025)
+NDA205750,,,,,unverified,Cholbam: holder at 2015 approval (Asklepion vs Retrophin) not verified
+NDA217417,,CDTX,,,approval_time_holder,Rezzayo NDA held by Cidara Therapeutics at approval
+NDA210598,,VTRS,,,approval_time_holder,Yupelri approved to Mylan (Mylan merged into Viatris 2020; MYL history may be missing)
+NDA212862,,,,,nonprofit_or_academic,Pretomanid approved to TB Alliance (nonprofit)
+NDA215272,,ROIV,,,approval_time_holder,"Vtama approved to Dermavant, a Roivant subsidiary (sold to Organon 2024)"
+NDA212728,,,,,acquired_delisted,Nurtec approved to old Biohaven (acquired by Pfizer 2022; ticker BHVN now a different company)
+NDA213721,,BPMC,,,acquired_delisted,Gavreto approved to Blueprint Medicines in 2020
+NDA211371,,SAGE,,,acquired_delisted,Zulresso approved to Sage Therapeutics
+NDA205353,,NVS,,,approval_time_holder,Farydak approved to Novartis in 2015
+NDA211155,,VSTM,,,approval_time_holder,Copiktra approved to Verastem in 2018
+NDA211192,,AGIO,,,approval_time_holder,Tibsovo approved to Agios in 2018 (oncology unit sold to Servier 2021)
+NDA217639,,,,,private,"Orserdu approved to Stemline, then owned by private Menarini"
+NDA214621,,MYOV,,,acquired_delisted,Orgovyx approved to Myovant Sciences (acquired by Sumitomo 2023)
+NDA213006,,UROV,,,acquired_delisted,Gemtesa approved to Urovant Sciences (acquired by Sumitovant 2021)
+NDA205266,,NVS,,,approval_time_holder,Odomzo approved to Novartis in 2015 (sold to Sun 2016)
+NDA213433,,,,,foreign_not_us_listed,Winlevi approved to Cassiopea (SIX)
+NDA206500,,TSRO,,,acquired_delisted,Varubi approved to Tesaro in 2015
+NDA208794,,LXRX,,,approval_time_holder,Xermelo approved to Lexicon Pharmaceuticals in 2017
+BLA761150,,MGNX,,,approval_time_holder,Margenza approved to MacroGenics in 2020
+NDA213498,,JNJ,,,approval_time_holder,Ponvory approved to Janssen in 2021 (sold to Vanda 2023)
+NDA214916,,CARA,,,approval_time_holder,Korsuva NDA held by Cara Therapeutics at approval
+NDA208684,,,,,private,Emflaza approved to private Marathon Pharmaceuticals (sold to PTC Mar 2017)
+BLA761092,,,,,private,Revcovi approved to private Leadiant Biosciences
+NDA212155,,,,,private,Cerianna approved to private Zionexa
+NDA215168,,GEHC,,,subsidiary_of_listed,GE HealthCare (listed since Jan 2023)
+BLA761336,,IBRX,,,subsidiary_of_listed,Altor BioScience is an ImmunityBio subsidiary
+BLA761177,,ASND,,,subsidiary_of_listed,Ascendis Pharma (Nasdaq ADS)
+BLA761244,,,,,private,Boehringer Ingelheim is private
+BLA761184,,PFE,,,subsidiary_of_listed,Pfizer subsidiary
+,BIOGEN MA,BIIB,,,subsidiary_of_listed,Biogen subsidiary
+NDA216718,,RETA,,,acquired_delisted,Skyclarys approved to Reata Pharmaceuticals Feb 2023 (acquired by Biogen Sept 2023)
+NDA217369,,,,,unverified,Zurzuvae co-developed by Sage and Biogen; which stock is 'the' event firm is ambiguous

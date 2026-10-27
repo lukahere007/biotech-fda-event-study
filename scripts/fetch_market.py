@@ -26,10 +26,10 @@ from fda_event.config import BENCHMARK, OTHER_INDICES, PRICE_END, PRICE_START  #
 DATA = ROOT / "data"
 
 
-def fetch_prices(tickers: list[str]) -> pd.DataFrame:
+def fetch_prices(tickers: list[str], batch: int = 40) -> pd.DataFrame:
     frames = []
-    for i in range(0, len(tickers), 40):
-        chunk = tickers[i:i + 40]
+    for i in range(0, len(tickers), batch):
+        chunk = tickers[i:i + batch]
         raw = yf.download(chunk, start=PRICE_START, end=PRICE_END, auto_adjust=False,
                           group_by="ticker", threads=True, progress=False)
         for t in chunk:
@@ -45,7 +45,8 @@ def fetch_prices(tickers: list[str]) -> pd.DataFrame:
                                         "adj_close": sub["Adj Close"].values,
                                         "volume": sub["Volume"].values}))
         time.sleep(2)
-    return pd.concat(frames, ignore_index=True)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(
+        columns=["date", "ticker", "close", "adj_close", "volume"])
 
 
 def fetch_splits(tickers: list[str]) -> pd.DataFrame:
@@ -85,6 +86,12 @@ def main() -> None:
     tickers = sorted(ev["ticker"].dropna().unique().tolist())
     all_t = tickers + [BENCHMARK] + OTHER_INDICES
     prices = fetch_prices(all_t)
+    # Second pass, one ticker at a time, for symbols the batch call returned empty
+    # (batch downloads occasionally drop a symbol; delisted symbols stay empty).
+    missing = [t for t in all_t if t not in set(prices["ticker"])]
+    if missing:
+        time.sleep(5)
+        prices = pd.concat([prices, fetch_prices(missing, batch=1)], ignore_index=True)
     prices.to_parquet(DATA / "prices.parquet", index=False)
     got = set(prices["ticker"])
     fetch_splits(tickers).to_csv(DATA / "splits.csv", index=False)
