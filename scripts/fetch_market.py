@@ -57,6 +57,8 @@ def fetch_splits(tickers: list[str]) -> pd.DataFrame:
         except Exception as e:  # noqa: BLE001
             print("splits failed", t, e)
             continue
+        if s is None:
+            continue
         for d, ratio in s.items():
             rows.append({"ticker": t, "date": pd.Timestamp(d).tz_localize(None).normalize(), "ratio": ratio})
     return pd.DataFrame(rows, columns=["ticker", "date", "ratio"])
@@ -94,9 +96,10 @@ def main() -> None:
         prices = pd.concat([prices, fetch_prices(missing, batch=1)], ignore_index=True)
     prices.to_parquet(DATA / "prices.parquet", index=False)
     got = set(prices["ticker"])
-    fetch_splits(tickers).to_csv(DATA / "splits.csv", index=False)
+    have = [t for t in tickers if t in got]   # splits/shares only for symbols with prices
+    fetch_splits(have).to_csv(DATA / "splits.csv", index=False)
 
-    shares = fetch_shares(tickers)
+    shares = fetch_shares(have)
     shares.to_csv(DATA / "shares_outstanding.csv.gz", index=False)
 
     log = {"fetched_at_utc": datetime.now(timezone.utc).isoformat(), "yfinance": yf.__version__,
