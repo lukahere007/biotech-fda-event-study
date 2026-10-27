@@ -9,7 +9,9 @@ EVENT_WINDOWS = {"[0,+1]": (0, 1), "[-1,+1]": (-1, 1), "[-5,+5]": (-5, 5),
 PLOT_RANGE = (-20, 20)
 # Same-ticker approvals closer than this (trading days) are treated as confounded.
 CONFOUND_GAP = 10
-SMALL_CAP_USD = 2e9
+# Market-cap buckets (USD, measured at day -30): small biotech / mid-size / big pharma.
+SIZE_BINS = [0, 2e9, 20e9, float("inf")]
+SIZE_LABELS = ["Small (<$2B)", "Mid ($2-20B)", "Large (>$20B)"]
 BENCHMARK = "XBI"
 OTHER_INDICES = ["IBB", "SPY"]
 PRICE_START = "2013-06-01"

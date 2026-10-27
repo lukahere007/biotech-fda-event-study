@@ -5,6 +5,7 @@ import pytest
 
 from fda_event.events import (core_company, define_novel_approvals, flag_confounded, ingredient_cores,
                               map_tickers, normalize_brand, normalize_company)
+from fda_event.pipeline import market_cap
 from fda_event.model import abnormal_returns, day_zero, market_model, to_returns
 from fda_event.stats import car, car_sd, caar_path, summarize
 
@@ -166,3 +167,16 @@ def test_map_tickers_override_dates_and_auto_match():
     m = map_tickers(ev, listings, ov)
     assert list(m["ticker"].fillna("-")) == ["ACME", "-", "BIGP", "-"]
     assert list(m["map_method"]) == ["auto_exact", "override", "override", "override"]
+
+
+def test_market_cap_undoes_split_adjustment():
+    # 1:10 reverse split on 2019-01-02. Yahoo closes are split-adjusted to today, so the 2018
+    # close shows 100 although the stock actually traded at 10 with 1m shares -> $10m.
+    prices = pd.DataFrame({"ticker": "X", "date": pd.to_datetime(["2018-06-01"]), "close": [100.0]})
+    splits = pd.DataFrame({"ticker": ["X"], "date": pd.to_datetime(["2019-01-02"]), "ratio": [0.1]})
+    shares = pd.DataFrame({"ticker": ["X"], "date": pd.to_datetime(["2018-01-01"]), "shares": [1e6]})
+    mcap, basis = market_cap("X", pd.Timestamp("2018-06-01"), prices, splits, shares)
+    assert mcap == pytest.approx(1e7) and basis == "before"
+    # no share count within 400 days -> unknown rather than a guess
+    mcap, basis = market_cap("X", pd.Timestamp("2020-06-01"), prices, splits, shares)
+    assert np.isnan(mcap) and basis == "missing"

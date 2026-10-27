@@ -40,40 +40,45 @@ def pct(x, d=2):
 def plot_caar(st, path):
     ev = st.events
     g = groups(ev)
-    sets = [("Small cap (<$2B)", SERIES[1]), ("Large cap (>=$2B)", SERIES[0])]
-    fig, ax = plt.subplots(figsize=(8, 4.6))
-    for name, col in sets:
+    fig, ax = plt.subplots(figsize=(8.5, 4.8))
+    for name, col in zip(C.SIZE_LABELS, [SERIES[1], SERIES[2], SERIES[0]]):
         ids = ev.loc[g[name], "event_id"]
         p = caar_path(st.ar[ids], C.PLOT_RANGE[0], C.PLOT_RANGE[1])
-        ax.fill_between(p["tau"], p["lo"] * 100, p["hi"] * 100, color=col, alpha=0.15, lw=0)
+        ax.fill_between(p["tau"], p["lo"] * 100, p["hi"] * 100, color=col, alpha=0.13, lw=0)
         ax.plot(p["tau"], p["caar"] * 100, color=col, label=f"{name}, n={p['n'].iloc[0]}")
         ax.annotate(name.split(" (")[0], (p["tau"].iloc[-1], p["caar"].iloc[-1] * 100),
-                    xytext=(4, 0), textcoords="offset points", color=INK2, va="center", fontsize=9)
+                    xytext=(5, 0), textcoords="offset points", color=INK2, va="center", fontsize=9)
     ax.axvline(0, color=INK2, lw=1, ls="--")
     ax.axhline(0, color=INK2, lw=0.8)
-    ax.set_xlabel("Trading days relative to approval (day 0 = first trading day on/after approval date)")
+    ax.set_xlabel("Trading days relative to approval (day 0 = first trading day on/after the approval date)")
     ax.set_ylabel("Cumulative average abnormal return (%)")
-    ax.set_title("CAAR around FDA novel drug approvals, market model vs XBI (95% CI)", loc="left")
+    ax.set_title("CAAR around FDA novel drug approvals by market cap (market model vs XBI, 95% CI)",
+                 loc="left", fontsize=10.5)
     ax.legend(frameon=False, loc="upper left")
-    ax.set_xlim(C.PLOT_RANGE[0], C.PLOT_RANGE[1] + 5)
+    ax.set_xlim(C.PLOT_RANGE[0], C.PLOT_RANGE[1] + 6)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
 
 
 def plot_car_dist(ev, path):
-    fig, ax = plt.subplots(figsize=(8, 4.2))
-    bins = np.linspace(-0.4, 0.4, 41)
-    for name, col in [("Large cap (>=$2B)", SERIES[0]), ("Small cap (<$2B)", SERIES[1])]:
-        c = ev.loc[groups(ev)[name], "CAR[0,+1]"].dropna().clip(-0.4, 0.4)
-        ax.hist(c, bins=bins, color=col, alpha=0.55, label=f"{name}, n={len(c)}",
-                edgecolor=SURF, linewidth=1)
+    """Strip plot of every event's CAR[0,+1] by size group, with the median marked."""
+    fig, ax = plt.subplots(figsize=(8.5, 4.2))
+    rng = np.random.default_rng(0)
+    g = groups(ev)
+    for i, (name, col) in enumerate(zip(C.SIZE_LABELS, [SERIES[1], SERIES[2], SERIES[0]])):
+        c = ev.loc[g[name], "CAR[0,+1]"].dropna()
+        y = i + rng.uniform(-0.18, 0.18, len(c))
+        ax.scatter(c.clip(-0.4, 0.9) * 100, y, s=22, color=col, alpha=0.75, edgecolor=SURF, linewidth=0.8)
+        med = c.median() * 100
+        ax.plot([med, med], [i - 0.3, i + 0.3], color=INK, lw=2)
+        ax.annotate(f"median {med:+.1f}%", (med, i - 0.3), xytext=(4, 0), textcoords="offset points", color=INK2, fontsize=8.5, ha="left", va="bottom")
+    ax.set_yticks(range(len(C.SIZE_LABELS)), [f"{n}\nn={g[n].sum()}" for n in C.SIZE_LABELS])
     ax.axvline(0, color=INK2, lw=1, ls="--")
-    ax.set_xlabel("CAR[0,+1] (clipped at ±40%)")
-    ax.set_ylabel("Events")
-    ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
-    ax.set_title("Distribution of 2-day abnormal returns at approval", loc="left")
-    ax.legend(frameon=False)
+    ax.set_xlabel("CAR[0,+1] (%), one dot per approval (values clipped at -40% / +90%)")
+    ax.set_title("Two-day abnormal return at approval, by market cap", loc="left", fontsize=10.5)
+    ax.grid(axis="y", visible=False)
+    ax.invert_yaxis()
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
@@ -84,6 +89,7 @@ def plot_volume(av, path):
     med = av.median(axis=1)
     ax.bar(med.index, med.values, color=SERIES[0], width=0.7)
     ax.axhline(1, color=INK2, lw=1, ls="--")
+    ax.grid(axis="x", visible=False)
     ax.set_xlabel("Trading days relative to approval")
     ax.set_ylabel("Median volume / normal volume")
     ax.set_title(f"Abnormal trading volume (median across {av.shape[1]} events)", loc="left")
@@ -132,12 +138,21 @@ def main() -> None:
     plot_car_dist(ev, FIG / "car_distribution.png")
     plot_volume(av, FIG / "abnormal_volume.png")
 
+    # Does a bigger pre-approval run-up go with a weaker reaction? (Spearman, by size group)
+    from scipy.stats import spearmanr
+    runup = {}
+    for name in C.SIZE_LABELS:
+        sub = ev[groups(ev)[name]].dropna(subset=["CAR[-20,-2]", "CAR[0,+1]"])
+        rho, pv = spearmanr(sub["CAR[-20,-2]"], sub["CAR[0,+1]"])
+        runup[name] = {"n": int(len(sub)), "spearman_rho": round(float(rho), 3), "p": round(float(pv), 4)}
+
     top = ev.sort_values("CAR[0,+1]")
     summary = {
         "n_events": int(len(ev)),
         "n_tickers": int(ev["ticker"].nunique()),
         "size_groups": ev["size_group"].value_counts().to_dict(),
         "first_approval": int(ev["first_approval"].sum()),
+        "runup_vs_reaction": runup,
         "largest_moves": top[["ticker", "brand_name", "event_date", "CAR[0,+1]"]].iloc[
             list(range(3)) + list(range(-3, 0))].astype(str).to_dict("records"),
     }

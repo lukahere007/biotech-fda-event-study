@@ -106,11 +106,20 @@ class Study:
 def build_study(inp: Inputs, benchmark: str = C.BENCHMARK) -> Study:
     ev = inp.events.copy()
     steps = [("Novel approvals 2015-2024 (Drugs@FDA: NDA type 1 + new-biologic BLAs)", len(ev))]
+    labels = {"foreign_not_us_listed": "sponsor not listed on a US exchange (foreign / OTC only)",
+              "private": "sponsor private at approval", "nonprofit_or_academic": "nonprofit or academic sponsor",
+              "unverified": "approval-time holder not verified (excluded)",
+              "acquired_delisted": "sponsor since acquired, no ticker to try",
+              "unmapped": "no ticker match"}
+    for st, n in ev.loc[ev["ticker"].isna(), "map_status"].value_counts().items():
+        steps.append((f"dropped: {labels.get(st, st)}", -int(n)))
     ev = ev[ev["ticker"].notna()]
-    steps.append(("sponsor mapped to a US exchange-listed ticker", len(ev)))
+    steps.append(("mapped to a ticker of the approval-time holder", len(ev)))
     have_px = set(inp.prices["ticker"])
+    steps.append(("dropped: no Yahoo price history (delisted after acquisition/bankruptcy)",
+                  -int((~ev["ticker"].isin(have_px)).sum())))
     ev = ev[ev["ticker"].isin(have_px)]
-    steps.append(("price history available (yfinance)", len(ev)))
+    steps.append(("price history available", len(ev)))
 
     returns = to_returns(inp.prices)
     cal = returns[benchmark].dropna().index
@@ -144,8 +153,8 @@ def build_study(inp: Inputs, benchmark: str = C.BENCHMARK) -> Study:
     mc = [market_cap(t, d, inp.prices, inp.splits, inp.shares) for t, d in zip(ev["ticker"], ev["size_date"])]
     ev["mcap_usd"] = [m for m, _ in mc]
     ev["mcap_basis"] = [b for _, b in mc]
-    ev["size_group"] = np.select([ev["mcap_usd"] < C.SMALL_CAP_USD, ev["mcap_usd"] >= C.SMALL_CAP_USD],
-                                 ["small (<$2B)", "large (>=$2B)"], "unknown")
+    ev["size_group"] = (pd.cut(ev["mcap_usd"], C.SIZE_BINS, labels=C.SIZE_LABELS, right=False)
+                          .astype(object).fillna("Unknown"))
     ev["prior_approvals"] = prior_approvals(ev, inp).values
     ev["first_approval"] = ev["prior_approvals"] == 0
 
@@ -161,14 +170,13 @@ def build_study(inp: Inputs, benchmark: str = C.BENCHMARK) -> Study:
 
 def groups(ev: pd.DataFrame) -> dict[str, pd.Series]:
     """Boolean masks for the subsamples reported in the README."""
-    return {
-        "All events": pd.Series(True, index=ev.index),
-        "Small cap (<$2B)": ev["size_group"].eq("small (<$2B)"),
-        "Large cap (>=$2B)": ev["size_group"].eq("large (>=$2B)"),
-        "First approval for company": ev["first_approval"],
-        "Company had prior approvals": ~ev["first_approval"],
-        "Small cap & first approval": ev["size_group"].eq("small (<$2B)") & ev["first_approval"],
-    }
+    out = {"All events": pd.Series(True, index=ev.index)}
+    for lab in C.SIZE_LABELS:
+        out[lab] = ev["size_group"].eq(lab)
+    out["First approval for company"] = ev["first_approval"]
+    out["Company had prior approvals"] = ~ev["first_approval"]
+    out["Small & first approval"] = ev["size_group"].eq(C.SIZE_LABELS[0]) & ev["first_approval"]
+    return out
 
 
 def results_table(ev: pd.DataFrame, windows=C.EVENT_WINDOWS) -> pd.DataFrame:

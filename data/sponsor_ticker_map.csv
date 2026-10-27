@@ -47,7 +47,7 @@ appl_no,sponsor_key,ticker,valid_from,valid_to,status,note
 ,PROGENICS PHARMACEUTICALS,LNTH,,,subsidiary_of_listed,"Progenics acquired by Lantheus in June 2020, before the 2021 approval"
 ,MERUS N V,MRUS,,,approval_time_holder,Merus N.V. (Nasdaq) (not in the Oct-2026 listing snapshot; price history from yfinance if available)
 ,CHECKPOINT THERAPEUTICS,CKPT,,,acquired_delisted,Checkpoint Therapeutics (acquired by Sun Pharma 2025)
-,ARRAY BIOPHARMA,ARRY,,,acquired_delisted,"Array BioPharma, acquired by Pfizer 2019"
+,ARRAY BIOPHARMA,,,,acquired_delisted,"Array BioPharma (ARRY), acquired by Pfizer 2019; the symbol ARRY now belongs to Array Technologies, so it must not be used"
 ,AKCEA THERAPS,AKCA,,,acquired_delisted,"Akcea Therapeutics (Nasdaq), acquired by Ionis 2020"
 ,AKARX,DOVA,,,acquired_delisted,AkaRx is a subsidiary of Dova Pharmaceuticals (acquired by Sobi 2019)
 ,AVEO PHARMACEUTICALS,AVEO,,,acquired_delisted,"AVEO, acquired by LG Chem 2023"

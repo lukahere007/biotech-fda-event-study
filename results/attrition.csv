@@ -1,0 +1,14 @@
+step,events
+Novel approvals 2015-2024 (Drugs@FDA: NDA type 1 + new-biologic BLAs),458
+dropped: sponsor not listed on a US exchange (foreign / OTC only),-80
+dropped: sponsor private at approval,-47
+dropped: approval-time holder not verified (excluded),-9
+dropped: nonprofit or academic sponsor,-5
+"dropped: sponsor since acquired, no ticker to try",-3
+mapped to a ticker of the approval-time holder,314
+dropped: no Yahoo price history (delisted after acquisition/bankruptcy),-79
+price history available,235
+after merging same-ticker same-day approvals,235
+after dropping approvals <= 10 trading days after another for the same ticker,233
+dropped: insufficient estimation window,-1
+final event sample,232
